@@ -4,6 +4,7 @@ const { join, relative, dirname, sep } = require("path");
 const hypertrie = require("hypertrie");
 const db = hypertrie("./database", { valueEncoding: "json" });
 var hyperdrive = require("hyperdrive");
+var net = require("net");
 
 var encryptor = require("file-encryptor");
 let encryptorKey = "Fe3$MFl1nmf7";
@@ -26,6 +27,12 @@ db.on("ready", d => {
 db.put("initialized", true, function() {
   db.get("initialized", console.log);
 });
+
+var server = net.createServer(function (socket) {
+  socket.pipe(db.replicate(true, { live: true })).pipe(socket);
+});
+
+server.listen(8081);
 
 fs.ensureDirSync(localPackages);
 fs.ensureDirSync(uploadPackages);
