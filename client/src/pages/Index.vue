@@ -54,7 +54,7 @@ export default {
   methods: {
     changeDownloadState (pack) {
       pack.download = !pack.download
-      this.$database.updatePackages(this.packages)
+      this.$database.updatePackages(this.packages, true)
     }
   }
 }

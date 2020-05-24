@@ -32,13 +32,15 @@ class Database {
     return docsSubject.asObservable()
   }
 
-  updatePackages (packages) {
+  updatePackages (packages, updateState) {
     packages.forEach(p => {
       db.get(p.name)
         .then(d => {
           if (d) {
             d.name = p.name
-            d.download = p.download ? p.download : false
+            if (updateState) {
+              d.download = p.download ? p.download : false
+            }
             console.log(d)
             db.put(d).then(() => console.log('package updated'))
           } else {
