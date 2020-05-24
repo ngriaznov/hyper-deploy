@@ -64,7 +64,8 @@ function createWindow () {
 
     // Create / Open a database
     const db = await orbitdb.open(
-      '/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper'
+      '/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper',
+      { sync: true }
     )
     await db.load()
 

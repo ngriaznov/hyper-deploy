@@ -64,7 +64,10 @@ const initializeOrbit = async () => {
   const orbitdb = await OrbitDB.createInstance(ipfs);
 
   // Create / Open a database
-  db = await orbitdb.docstore("deploy-hyper");
+  // db = await orbitdb.docstore("deploy-hyper");
+  db = await orbitdb.open(
+    "/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper", { sync: true }
+  );
   await db.load();
 
   // Listen for updates from peers
