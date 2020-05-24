@@ -76,7 +76,7 @@ const initializeChokidar = () => {
     }
   });
 
-  chokidar.watch(uploadPackages).on("raw", async (file) => {
+  fs.watch(uploadPackages, { recursive: true }, async (file) => {
     await updatePackageMetadata();
   });
 };
