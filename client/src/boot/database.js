@@ -13,7 +13,6 @@ class Database {
     })
       .on('change', function (change) {
         db.allDocs({ include_docs: true }).then(ps => {
-          console.log('changes obtained')
           docsSubject.next(ps.rows.map(r => r.doc))
         })
       })
@@ -37,7 +36,12 @@ class Database {
     packages.forEach(p => {
       db.get(p.name)
         .then(d => {
-          if (!d) {
+          if (d) {
+            d.name = p.name
+            d.download = p.download ? p.download : false
+            console.log(d)
+            db.put(d).then(() => console.log('package updated'))
+          } else {
             db.put({
               _id: p.name,
               name: p.name,
@@ -45,7 +49,8 @@ class Database {
             })
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error(err)
           db.put({
             _id: p.name,
             name: p.name,
@@ -56,7 +61,6 @@ class Database {
 
     db.allDocs({ include_docs: true }).then(ps => {
       if (ps && ps.rows) {
-        console.log('local package cleanup')
         ps.rows
           .map(r => r.doc)
           .forEach(p => {

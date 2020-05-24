@@ -49,7 +49,22 @@ module.exports = function (/* ctx */) {
       directives: [],
 
       // Quasar plugins
-      plugins: []
+      plugins: [],
+      config: {
+        brand: {
+          primary: '#393d45',
+          secondary: '#26A69A',
+          accent: '#9C27B0',
+
+          dark: '#1d1d1d',
+
+          positive: '#21BA45',
+          negative: '#C10015',
+          info: '#31CCEC',
+          warning: '#F2C037'
+        },
+        dark: false
+      }
     },
 
     // https://quasar.dev/quasar-cli/cli-documentation/supporting-ie

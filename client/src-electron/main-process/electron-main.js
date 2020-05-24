@@ -66,7 +66,6 @@ function createWindow () {
 
       // Listen for updates from peers
       db.events.on('replicated', address => {
-        console.log('orbit-db replicated')
         setTimeout(() => {
           mainWindow.webContents.send('orbit-replicated', db.get('storage'))
         }, 3000)
