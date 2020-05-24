@@ -5,8 +5,14 @@ node_modules
 /client/node_modules
 /server/database
 /client/database
+/server/packages
+/client/packages
 /server/download
 /client/download
+/server/ipfs
+/client/ipfs
+/server/orbitdb
+/client/orbitdb
 # Quasar core related directories
 .quasar
 /dist

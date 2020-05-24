@@ -11,11 +11,13 @@
   "dependencies": {
     "chokidar": "^3.4.0",
     "dht-rpc": "^4.9.0",
+    "directory-tree": "^2.2.4",
     "file-encryptor": "^0.1.1",
     "fs-extra": "^9.0.0",
     "hyperdrive": "^10.11.0",
     "hypertrie": "^5.0.1",
     "ipfs": "^0.44.0",
+    "orbit-db": "^0.24.1",
     "workerpool": "^6.0.0"
   }
 }

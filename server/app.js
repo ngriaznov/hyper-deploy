@@ -1,10 +1,10 @@
 const chokidar = require("chokidar");
 const fs = require("fs-extra");
 const { join, relative, dirname, sep } = require("path");
-const hypertrie = require("hypertrie");
-const db = hypertrie("./database", { valueEncoding: "json" });
-var hyperdrive = require("hyperdrive");
-var net = require("net");
+
+const IPFS = require("ipfs");
+const OrbitDB = require("orbit-db");
+const dirTree = require("directory-tree");
 
 var encryptor = require("file-encryptor");
 let encryptorKey = "Fe3$MFl1nmf7";
@@ -13,39 +13,16 @@ var encryptorOptions = { algorithm: "aes256" };
 const localPackages = "./packages";
 const uploadPackages = "./download";
 
-var drive = hyperdrive(uploadPackages);
-drive.writeFile("./init.me", true);
-
-drive.on("ready", () => {
-  fs.writeFileSync("hyperdrive.key", drive.key.toString("hex"));
-});
-
-db.on("ready", d => {
-  fs.writeFileSync("hypertrie.key", db.key.toString("hex"));
-});
-
-db.put("initialized", true, function() {
-  db.get("initialized", console.log);
-});
-
-var server = net.createServer(function (socket) {
-  socket.pipe(db.replicate(true, { live: true })).pipe(socket);
-});
-
-server.listen(8081);
-
 fs.ensureDirSync(localPackages);
 fs.ensureDirSync(uploadPackages);
+let db = null;
 
-const updatePackageMetadata = filename => {
-  const stats = fs.statSync(filename);
-
-  db.put(filename, {
-    name: dirname(filename)
-      .split(sep)
-      .pop(),
-    created: stats.birthtime
-  });
+const updatePackageMetadata = async () => {
+  const tree = dirTree(uploadPackages);
+  console.log(tree);
+  if (db) {
+    await db.put({ _id: "storage", structure: tree });
+  }
 };
 
 const copyEncrypt = (file, source, target) => {
@@ -58,20 +35,47 @@ const copyEncrypt = (file, source, target) => {
     targetFile,
     encryptorKey,
     encryptorOptions,
-    err => {
+    (err) => {
       console.log("file encrypted: " + file);
     }
   );
 };
 
 const initializeChokidar = () => {
-  chokidar.watch(localPackages).on("change", file => {
+  chokidar.watch(localPackages).on("change", (file) => {
     copyEncrypt(file, localPackages, uploadPackages);
   });
 
-  chokidar.watch(localPackages).on("add", file => {
+  chokidar.watch(localPackages).on("add", (file) => {
     copyEncrypt(file, localPackages, uploadPackages);
+  });
+
+  chokidar.watch(uploadPackages).on("all", async (file) => {
+    await updatePackageMetadata();
   });
 };
 
-initializeChokidar();
+const initializeOrbit = async () => {
+  const initIPFSInstance = async () => {
+    return await IPFS.create({ repo: "./ipfs" });
+  };
+
+  const ipfs = await initIPFSInstance();
+  const orbitdb = await OrbitDB.createInstance(ipfs);
+
+  // Create / Open a database
+  db = await orbitdb.docstore("deploy-hyper");
+  await db.load();
+
+  // Listen for updates from peers
+  db.events.on("replicated", (address) => {
+    console.log(db.iterator({ limit: -1 }).collect());
+  });
+
+  fs.writeJsonSync("orbit.address", db.address);
+
+  // Add initialization entry
+  await db.put({ _id: "system", initialized: true });
+};
+
+initializeOrbit().then(() => initializeChokidar());
