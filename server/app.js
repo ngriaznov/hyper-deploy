@@ -10,8 +10,7 @@ var encryptor = require("file-encryptor");
 let encryptorKey = "Fe3$MFl1nmf7";
 var encryptorOptions = { algorithm: "aes256" };
 
-const Cryptr = require("cryptr");
-const cryptr = new Cryptr(encryptorKey);
+const cryptr = require("aes256");
 
 const localPackages = "./packages";
 const uploadPackages = "./download";
@@ -26,7 +25,7 @@ const updatePackageMetadata = async () => {
     if (db) {
       await db.put({
         _id: "storage",
-        structure: cryptr.encrypt(JSON.stringify(tree)),
+        structure: cryptr.encrypt(encryptorKey, JSON.stringify(tree)),
       });
     }
   } catch {
@@ -77,13 +76,7 @@ const initializeChokidar = () => {
     }
   });
 
-  chokidar.watch(uploadPackages).on("change", async (file) => {
-    await updatePackageMetadata();
-  });
-  chokidar.watch(uploadPackages).on("unlink", async (file) => {
-    await updatePackageMetadata();
-  });
-  chokidar.watch(uploadPackages).on("unlinkDir", async (file) => {
+  chokidar.watch(uploadPackages).on("raw", async (file) => {
     await updatePackageMetadata();
   });
 };

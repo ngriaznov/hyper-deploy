@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aes256": "^1.0.4",
     "chokidar": "^3.4.0",
-    "cryptr": "^6.0.2",
     "dht-rpc": "^4.9.0",
     "directory-tree": "^2.2.4",
     "file-encryptor": "^0.1.1",
