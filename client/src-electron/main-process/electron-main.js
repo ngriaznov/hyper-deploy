@@ -43,40 +43,40 @@ function createWindow () {
     frame: false
   })
 
-  mainWindow.loadURL(process.env.APP_URL)
+  mainWindow.loadURL(process.env.APP_URL).then(() => {
+    const IPFS = require('ipfs')
+    const OrbitDB = require('orbit-db')
 
-  mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+    // For js-ipfs >= 0.38
 
-  const IPFS = require('ipfs')
-  const OrbitDB = require('orbit-db')
+    // Create IPFS instance
+    const initIPFSInstance = async () => {
+      return await IPFS.create({ repo: './ipfs' })
+    }
 
-  // For js-ipfs >= 0.38
+    initIPFSInstance().then(async ipfs => {
+      const orbitdb = await OrbitDB.createInstance(ipfs)
 
-  // Create IPFS instance
-  const initIPFSInstance = async () => {
-    return await IPFS.create({ repo: './ipfs' })
-  }
+      // Create / Open a database
+      const db = await orbitdb.open(
+        '/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper',
+        { sync: true }
+      )
+      await db.load()
 
-  initIPFSInstance().then(async ipfs => {
-    const orbitdb = await OrbitDB.createInstance(ipfs)
+      // Listen for updates from peers
+      db.events.on('replicated', address => {
+        setTimeout(() => {
+          mainWindow.webContents.send('orbit-replicated', db.get('storage'))
+        }, 3000)
+      })
 
-    // Create / Open a database
-    const db = await orbitdb.open(
-      '/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper',
-      { sync: true }
-    )
-    await db.load()
-
-    // Listen for updates from peers
-    db.events.on('replicated', address => {
-      console.log(db.iterator({ limit: -1 }).collect())
-      console.log(db.get('storage'))
+      mainWindow.webContents.send('orbit-replicated', db.get('storage'))
     })
 
-    // Query
-    console.log(db.get('storage'))
+    mainWindow.on('closed', () => {
+      mainWindow = null
+    })
   })
 }
 
