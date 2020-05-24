@@ -1,25 +1,24 @@
 import { app, BrowserWindow, nativeTheme } from 'electron'
-import { setInterval } from 'timers'
-const hypertrie = require('hypertrie')
-const db = hypertrie(
-  './database',
-  '95b4d62f6cfb4b6b4ad17406cc4172391ca9dfd2ab661bc77ff9ce0e8c576860',
-  { valueEncoding: 'json' }
-)
-var net = require('net')
 
 try {
-  if (process.platform === 'win32' && nativeTheme.shouldUseDarkColors === true) {
-    require('fs').unlinkSync(require('path').join(app.getPath('userData'), 'DevTools Extensions'))
+  if (
+    process.platform === 'win32' &&
+    nativeTheme.shouldUseDarkColors === true
+  ) {
+    require('fs').unlinkSync(
+      require('path').join(app.getPath('userData'), 'DevTools Extensions')
+    )
   }
-} catch (_) { }
+} catch (_) {}
 
 /**
  * Set `__statics` path to static files in production;
  * The reason we are setting it here is that the path needs to be evaluated at runtime
  */
 if (process.env.PROD) {
-  global.__statics = require('path').join(__dirname, 'statics').replace(/\\/g, '\\\\')
+  global.__statics = require('path')
+    .join(__dirname, 'statics')
+    .replace(/\\/g, '\\\\')
 }
 
 let mainWindow
@@ -50,17 +49,33 @@ function createWindow () {
     mainWindow = null
   })
 
-  db.ready(() => {
-    var socket = net.connect(8080)
+  const IPFS = require('ipfs')
+  const OrbitDB = require('orbit-db')
 
-    socket.pipe(db.replicate(false, { live: true })).pipe(socket)
-    socket.on('error', err => {
-      console.log(err)
+  // For js-ipfs >= 0.38
+
+  // Create IPFS instance
+  const initIPFSInstance = async () => {
+    return await IPFS.create({ repo: './ipfs' })
+  }
+
+  initIPFSInstance().then(async ipfs => {
+    const orbitdb = await OrbitDB.createInstance(ipfs)
+
+    // Create / Open a database
+    const db = await orbitdb.open(
+      '/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper'
+    )
+    await db.load()
+
+    // Listen for updates from peers
+    db.events.on('replicated', address => {
+      console.log(db.iterator({ limit: -1 }).collect())
+      console.log(db.get('storage'))
     })
 
-    setInterval(() => {
-      db.get('initialized', console.log)
-    }, 10000)
+    // Query
+    console.log(db.get('storage'))
   })
 }
 
