@@ -18,27 +18,34 @@ fs.ensureDirSync(uploadPackages);
 let db = null;
 
 const updatePackageMetadata = async () => {
-  const tree = dirTree(uploadPackages);
-  console.log(tree);
-  if (db) {
-    await db.put({ _id: "storage", structure: tree });
+  try {
+    const tree = dirTree(uploadPackages);
+    if (db) {
+      await db.put({ _id: "storage", structure: tree });
+    }
+  } catch {
+    console.error("failed to update package metadata");
   }
 };
 
 const copyEncrypt = (file, source, target) => {
-  const targetFile = join(target, relative(source, file));
-  fs.ensureDirSync(dirname(targetFile));
-  updatePackageMetadata(targetFile);
+  try {
+    const targetFile = join(target, relative(source, file));
+    fs.ensureDirSync(dirname(targetFile));
+    updatePackageMetadata(targetFile);
 
-  encryptor.encryptFile(
-    file,
-    targetFile,
-    encryptorKey,
-    encryptorOptions,
-    (err) => {
-      console.log("file encrypted: " + file);
-    }
-  );
+    encryptor.encryptFile(
+      file,
+      targetFile,
+      encryptorKey,
+      encryptorOptions,
+      (err) => {
+        console.log("file encrypted: " + file);
+      }
+    );
+  } catch {
+    console.log("failed to encrypt file: " + file);
+  }
 };
 
 const initializeChokidar = () => {
@@ -48,6 +55,20 @@ const initializeChokidar = () => {
 
   chokidar.watch(localPackages).on("add", (file) => {
     copyEncrypt(file, localPackages, uploadPackages);
+  });
+
+  chokidar.watch(localPackages).on("unlink", (file) => {
+    const targetFile = join(uploadPackages, relative(localPackages, file));
+    if (fs.existsSync(targetFile)) {
+      fs.unlinkSync(targetFile);
+    }
+  });
+
+  chokidar.watch(localPackages).on("unlinkDir", async (dir) => {
+    const targetDir = join(uploadPackages, relative(localPackages, dir));
+    if (fs.existsSync(targetDir)) {
+      fs.removeSync(targetDir);
+    }
   });
 
   chokidar.watch(uploadPackages).on("all", async (file) => {
@@ -66,14 +87,10 @@ const initializeOrbit = async () => {
   // Create / Open a database
   // db = await orbitdb.docstore("deploy-hyper");
   db = await orbitdb.open(
-    "/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper", { sync: true }
+    "/orbitdb/zdpuArAhoH47pxDHvkHuZKrMUsALrWpfwex4Ded9ewrxhW1U2/deploy-hyper",
+    { sync: true }
   );
   await db.load();
-
-  // Listen for updates from peers
-  db.events.on("replicated", (address) => {
-    console.log(db.iterator({ limit: -1 }).collect());
-  });
 
   fs.writeJsonSync("orbit.address", db.address);
 
