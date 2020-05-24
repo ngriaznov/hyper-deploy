@@ -71,7 +71,13 @@ const initializeChokidar = () => {
     }
   });
 
-  chokidar.watch(uploadPackages).on("all", async (file) => {
+  chokidar.watch(uploadPackages).on("change", async (file) => {
+    await updatePackageMetadata();
+  });
+  chokidar.watch(uploadPackages).on("unlink", async (file) => {
+    await updatePackageMetadata();
+  });
+  chokidar.watch(uploadPackages).on("unlinkDir", async (file) => {
     await updatePackageMetadata();
   });
 };
