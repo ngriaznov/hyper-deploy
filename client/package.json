@@ -17,6 +17,7 @@
     "hypertrie": "^5.0.1",
     "ipfs": "^0.44.0",
     "orbit-db": "^0.24.1",
+    "pouchdb": "^7.2.1",
     "quasar": "^1.0.0"
   },
   "devDependencies": {
