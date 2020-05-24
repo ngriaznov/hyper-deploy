@@ -10,6 +10,9 @@ var encryptor = require("file-encryptor");
 let encryptorKey = "Fe3$MFl1nmf7";
 var encryptorOptions = { algorithm: "aes256" };
 
+const Cryptr = require("cryptr");
+const cryptr = new Cryptr(encryptorKey);
+
 const localPackages = "./packages";
 const uploadPackages = "./download";
 
@@ -21,7 +24,10 @@ const updatePackageMetadata = async () => {
   try {
     const tree = dirTree(uploadPackages);
     if (db) {
-      await db.put({ _id: "storage", structure: tree });
+      await db.put({
+        _id: "storage",
+        structure: cryptr.encrypt(JSON.stringify(tree)),
+      });
     }
   } catch {
     console.error("failed to update package metadata");
