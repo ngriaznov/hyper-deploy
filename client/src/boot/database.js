@@ -40,9 +40,8 @@ class Database {
             d.name = p.name
             if (updateState) {
               d.download = p.download ? p.download : false
+              db.put(d).then(() => console.log('package updated'))
             }
-            console.log(d)
-            db.put(d).then(() => console.log('package updated'))
           } else {
             db.put({
               _id: p.name,

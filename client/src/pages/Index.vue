@@ -31,6 +31,10 @@
 </template>
 
 <script>
+
+const encryptorKey = 'Fe3$MFl1nmf7'
+const cryptr = require('aes256')
+
 export default {
   name: 'PageIndex',
   data () {
@@ -40,7 +44,7 @@ export default {
   },
   created () {
     this.$q.electron.ipcRenderer.on('orbit-replicated', (event, value) => {
-      const packages = value[0].structure.children.map(s => ({
+      const packages = JSON.parse(cryptr.decrypt(encryptorKey, value[0].structure)).children.map(s => ({
         name: s.name
       }))
       this.$database.updatePackages(packages)
