@@ -1,3 +1,6 @@
+const operators = require("rxjs/operators");
+const rxjs = require("rxjs");
+
 const chokidar = require("chokidar");
 const fs = require("fs-extra");
 const { join, relative, dirname, sep } = require("path");
@@ -12,12 +15,32 @@ var encryptorOptions = { algorithm: "aes256" };
 
 const cryptr = require("aes256");
 
+var Dat = require("dat-node");
+
 const localPackages = "./packages";
 const uploadPackages = "./download";
 
 fs.ensureDirSync(localPackages);
 fs.ensureDirSync(uploadPackages);
 let db = null;
+const dats = new Map();
+const updatePackageMetadataSubject = new rxjs.Subject();
+
+updatePackageMetadataSubject.pipe(operators.debounceTime(10000)).subscribe(() => {
+  const stor = db.get("storage")
+  const treeData = cryptr.decrypt(encryptorKey, stor[0].structure);
+  const tree = JSON.parse(treeData);
+  console.log(tree);
+})
+
+// Dat("./dat", function (err, dat) {
+//   if (err) throw err;
+//   console.log('importing files...')
+//   var progress = dat.importFiles({ watch: true }); // with watch: true, there is no callback
+//   progress.on("put", function (src, dest) {
+//     console.log("Importing ", src.name, " into archive");
+//   });
+// });
 
 const updatePackageMetadata = async () => {
   try {
@@ -27,6 +50,7 @@ const updatePackageMetadata = async () => {
         _id: "storage",
         structure: cryptr.encrypt(encryptorKey, JSON.stringify(tree)),
       });
+      updatePackageMetadataSubject.next();
     }
   } catch {
     console.error("failed to update package metadata");
