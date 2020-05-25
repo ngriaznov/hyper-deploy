@@ -18,6 +18,8 @@
     "ipfs": "^0.44.0",
     "mirror-folder": "3.0.0",
     "orbit-db": "^0.24.1",
-    "rxjs": "^6.5.5"
+    "rxjs": "^6.5.5",
+    "winston": "^3.2.1",
+    "winston-daily-rotate-file": "^4.4.2"
   }
 }

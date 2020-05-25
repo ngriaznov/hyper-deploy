@@ -1,5 +1,6 @@
 const operators = require("rxjs/operators");
 const rxjs = require("rxjs");
+const logger = require("./logger.js").logger;
 
 const chokidar = require("chokidar");
 const fs = require("fs-extra");
@@ -26,34 +27,64 @@ let db = null;
 const dats = new Map();
 const updatePackageMetadataSubject = new rxjs.Subject();
 
-updatePackageMetadataSubject.pipe(operators.debounceTime(10000)).subscribe(() => {
-  const stor = db.get("storage")
-  const treeData = cryptr.decrypt(encryptorKey, stor[0].structure);
-  const tree = JSON.parse(treeData);
-  console.log(tree);
-})
+const startDat = async (tree) => {
+  let promises = [];
 
-// Dat("./dat", function (err, dat) {
-//   if (err) throw err;
-//   console.log('importing files...')
-//   var progress = dat.importFiles({ watch: true }); // with watch: true, there is no callback
-//   progress.on("put", function (src, dest) {
-//     console.log("Importing ", src.name, " into archive");
-//   });
-// });
+  dats.forEach((d) => {
+    const promise = new Promise((resolve, reject) => {
+      d.close(() => {
+        resolve();
+      });
+    });
+    promises.push(promise);
+  });
+
+  await Promise.all(promises);
+  promises = [];
+
+  // Iterate tree, recreate and share dats
+  tree.children.forEach((dir) => {
+    const promise = new Promise((resolve, reject) => {
+      Dat(dir.path, function (err, dat) {
+        if (err) throw err;
+        var progress = dat.importFiles({ watch: true }); // with watch: true, there is no callback
+        progress.on("put", function (src, dest) {
+          logger.info(`Importing ${src.name} into archive`);
+        });
+        dat.joinNetwork();
+        resolve(Object.assign(dir, { storage: dat.key.toString("hex") }));
+        dats.set(dir.path, dat);
+      });
+    });
+    promises.push(promise);
+  });
+
+  const update = await Promise.all(promises);
+  tree.children.forEach((child) => {
+    tree.children[tree.children.indexOf(child)] = update.find(
+      (f) => f.path === child.path
+    );
+  });
+
+  if (db) {
+    await db.put({
+      _id: "storage",
+      structure: cryptr.encrypt(encryptorKey, JSON.stringify(tree)),
+    });
+  }
+};
+
+updatePackageMetadataSubject
+  .pipe(operators.debounceTime(10000))
+  .subscribe(async (tree) => {
+    await startDat(tree);
+  });
 
 const updatePackageMetadata = async () => {
   try {
-    const tree = dirTree(uploadPackages);
-    if (db) {
-      await db.put({
-        _id: "storage",
-        structure: cryptr.encrypt(encryptorKey, JSON.stringify(tree)),
-      });
-      updatePackageMetadataSubject.next();
-    }
+    updatePackageMetadataSubject.next(dirTree(uploadPackages));
   } catch {
-    console.error("failed to update package metadata");
+    logger.error("failed to update package metadata");
   }
 };
 
@@ -69,11 +100,14 @@ const copyEncrypt = (file, source, target) => {
       encryptorKey,
       encryptorOptions,
       (err) => {
-        console.log("file encrypted: " + file);
+        if (err) {
+          logger.error(err)
+        }
+        logger.info("file encrypted: " + file);
       }
     );
   } catch {
-    console.log("failed to encrypt file: " + file);
+    logger.error("failed to encrypt file: " + file);
   }
 };
 
@@ -100,12 +134,15 @@ const initializeChokidar = () => {
     }
   });
 
-  fs.watch(uploadPackages, { recursive: true }, async (file) => {
-    await updatePackageMetadata();
+  fs.watch(uploadPackages, { recursive: true }, async (action, path) => {
+    if (!path.includes(".dat")) {
+      await updatePackageMetadata();
+    }
   });
 };
 
 const initializeOrbit = async () => {
+  logger.info('initializing orbit...')
   const initIPFSInstance = async () => {
     return await IPFS.create({ repo: "./ipfs" });
   };

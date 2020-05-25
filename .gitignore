@@ -13,6 +13,8 @@ node_modules
 /client/ipfs
 /server/orbitdb
 /client/orbitdb
+/server/logs
+/client/logs
 # Quasar core related directories
 .quasar
 /dist
