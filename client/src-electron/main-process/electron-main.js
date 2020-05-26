@@ -1,4 +1,5 @@
 import { app, BrowserWindow, nativeTheme } from 'electron'
+const Database = require('../../src/boot/database').Database
 
 try {
   if (
@@ -46,6 +47,11 @@ function createWindow () {
   mainWindow.loadURL(process.env.APP_URL).then(() => {
     const IPFS = require('ipfs')
     const OrbitDB = require('orbit-db')
+
+    const database = new Database()
+    database.getPackages().subscribe(packages => {
+      console.log(packages)
+    })
 
     // For js-ipfs >= 0.38
 

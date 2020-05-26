@@ -4,7 +4,7 @@ import { ReplaySubject } from 'rxjs'
 const db = new PouchDB('local-package-store')
 const docsSubject = new ReplaySubject([])
 
-class Database {
+export class Database {
   constructor () {
     db.changes({
       since: 'now',

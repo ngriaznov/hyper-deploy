@@ -16,6 +16,7 @@
     "aes256": "^1.0.4",
     "axios": "^0.18.1",
     "cryptr": "^6.0.2",
+    "electron-store": "^5.1.1",
     "hypertrie": "^5.0.1",
     "ipfs": "^0.44.0",
     "orbit-db": "^0.24.1",
