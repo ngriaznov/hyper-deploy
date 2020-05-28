@@ -1,11 +1,13 @@
 import Vue from 'vue'
 import PouchDB from 'pouchdb'
 import { ReplaySubject } from 'rxjs'
-const db = new PouchDB('local-package-store')
+let db = null
 const docsSubject = new ReplaySubject([])
 
 export class Database {
-  constructor () {
+  constructor (external) {
+    db = new PouchDB('http://localhost:3333/db')
+
     db.changes({
       since: 'now',
       live: true,

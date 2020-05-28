@@ -53,6 +53,7 @@ const startDat = async (tree) => {
         });
         dat.joinNetwork();
         resolve(Object.assign(dir, { storage: dat.key.toString("hex") }));
+        // TODO: Read metadata if any
         dats.set(dir.path, dat);
       });
     });
@@ -89,23 +90,28 @@ const updatePackageMetadata = async () => {
 };
 
 const copyEncrypt = (file, source, target) => {
+  const targetFile = join(target, relative(source, file));
+
   try {
-    const targetFile = join(target, relative(source, file));
     fs.ensureDirSync(dirname(targetFile));
     updatePackageMetadata(targetFile);
 
-    encryptor.encryptFile(
-      file,
-      targetFile,
-      encryptorKey,
-      encryptorOptions,
-      (err) => {
-        if (err) {
-          logger.error(err)
+    if (!file.includes("package.json")) {
+      encryptor.encryptFile(
+        file,
+        targetFile,
+        encryptorKey,
+        encryptorOptions,
+        (err) => {
+          if (err) {
+            logger.error(err);
+          }
+          logger.info("file encrypted: " + file);
         }
-        logger.info("file encrypted: " + file);
-      }
-    );
+      );
+    } else {
+      fs.copyFileSync(file, targetFile)
+    }
   } catch {
     logger.error("failed to encrypt file: " + file);
   }
@@ -142,7 +148,7 @@ const initializeChokidar = () => {
 };
 
 const initializeOrbit = async () => {
-  logger.info('initializing orbit...')
+  logger.info("initializing orbit...");
   const initIPFSInstance = async () => {
     return await IPFS.create({ repo: "./ipfs" });
   };

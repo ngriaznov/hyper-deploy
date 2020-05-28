@@ -32,8 +32,8 @@
 
 <script>
 
-const encryptorKey = 'Fe3$MFl1nmf7'
-const cryptr = require('aes256')
+// const encryptorKey = 'Fe3$MFl1nmf7'
+// const cryptr = require('aes256')
 
 export default {
   name: 'PageIndex',
@@ -44,13 +44,15 @@ export default {
   },
   created () {
     this.$q.electron.ipcRenderer.on('orbit-replicated', (event, value) => {
-      const packages = JSON.parse(cryptr.decrypt(encryptorKey, value[0].structure)).children.map(s => ({
-        name: s.name,
-        storage: s.storage,
-        path: s.path
-      }))
-      console.log(packages)
-      this.$database.updatePackages(packages)
+      // if (value[0]) {
+      //   const packages = JSON.parse(cryptr.decrypt(encryptorKey, value[0].structure)).children.map(s => ({
+      //     name: s.name,
+      //     storage: s.storage,
+      //     path: s.path
+      //   }))
+      //   console.log(packages)
+      //   this.$database.updatePackages(packages)
+      // }
     })
 
     this.$database.getPackages().subscribe(sp => {

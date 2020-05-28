@@ -15,6 +15,11 @@ node_modules
 /client/orbitdb
 /server/logs
 /client/logs
+/client/local-package-store
+/client/package-store
+/client/_users
+/client/_replicator
+/client/pouch__all_dbs__
 # Quasar core related directories
 .quasar
 /dist

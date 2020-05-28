@@ -1,5 +1,9 @@
 import { app, BrowserWindow, nativeTheme } from 'electron'
 const Database = require('../../src/boot/database').Database
+var PouchDB = require('pouchdb')
+var express = require('express')
+var cors = require('cors')
+var expressApp = express()
 
 try {
   if (
@@ -48,7 +52,17 @@ function createWindow () {
     const IPFS = require('ipfs')
     const OrbitDB = require('orbit-db')
 
+    var ExpressPouchDB = PouchDB.defaults({ prefix: '/pouch/' })
+
+    expressApp.use(
+      cors({ credentials: true, origin: 'http://localhost:8081' })
+    )
+    expressApp.use('/db', require('express-pouchdb')(ExpressPouchDB))
+
+    expressApp.listen(3333)
+
     const database = new Database()
+
     database.getPackages().subscribe(packages => {
       console.log(packages)
     })
@@ -72,6 +86,7 @@ function createWindow () {
 
       // Listen for updates from peers
       db.events.on('replicated', address => {
+        console.log('update recieved')
         setTimeout(() => {
           mainWindow.webContents.send('orbit-replicated', db.get('storage'))
         }, 3000)
