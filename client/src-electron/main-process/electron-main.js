@@ -5,6 +5,9 @@ var express = require('express')
 var cors = require('cors')
 var expressApp = express()
 
+const encryptorKey = 'Fe3$MFl1nmf7'
+const cryptr = require('aes256')
+
 try {
   if (
     process.platform === 'win32' &&
@@ -52,22 +55,15 @@ function createWindow () {
     const IPFS = require('ipfs')
     const OrbitDB = require('orbit-db')
 
-    var ExpressPouchDB = PouchDB.defaults({ prefix: '/pouch/' })
-
     expressApp.use(
-      cors({ credentials: true, origin: 'http://localhost:8081' })
+      cors({ origin: 'http://localhost:8081', credentials: true })
     )
-    expressApp.use('/db', require('express-pouchdb')(ExpressPouchDB))
+    expressApp.use('/db', require('express-pouchdb')(PouchDB))
 
     expressApp.listen(3333)
+    var packageDatabase = new PouchDB('local-packages')
 
-    const database = new Database()
-
-    database.getPackages().subscribe(packages => {
-      console.log(packages)
-    })
-
-    // For js-ipfs >= 0.38
+    const database = new Database(packageDatabase)
 
     // Create IPFS instance
     const initIPFSInstance = async () => {
@@ -86,10 +82,14 @@ function createWindow () {
 
       // Listen for updates from peers
       db.events.on('replicated', address => {
-        console.log('update recieved')
-        setTimeout(() => {
-          mainWindow.webContents.send('orbit-replicated', db.get('storage'))
-        }, 3000)
+        const packages = JSON.parse(cryptr.decrypt(encryptorKey, db.get('storage')[0].structure)).children.map(s => ({
+          name: s.name,
+          storage: s.storage,
+          path: s.path
+        }))
+        mainWindow.webContents.send('orbit-replicated', packages)
+        database.updatePackages(packages)
+        console.log('update recieved', packages)
       })
 
       mainWindow.webContents.send('orbit-replicated', db.get('storage'))

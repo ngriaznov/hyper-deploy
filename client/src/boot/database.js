@@ -6,10 +6,23 @@ const docsSubject = new ReplaySubject([])
 
 export class Database {
   constructor (external) {
-    db = new PouchDB('http://localhost:3333/db')
+    if (external) {
+      db = external
+    } else {
+      const remoteDB = new PouchDB('http://localhost:3333/db/local-packages')
+      db = new PouchDB('local-packages')
+
+      db.sync(remoteDB, {
+        live: true,
+        retry: true
+      }).on('change', function (change) {
+        console.log('remote changes')
+      }).on('error', function (err) {
+        console.error(err)
+      })
+    }
 
     db.changes({
-      since: 'now',
       live: true,
       include_docs: true
     })

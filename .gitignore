@@ -17,6 +17,7 @@ node_modules
 /client/logs
 /client/local-package-store
 /client/package-store
+/client/local-packages
 /client/_users
 /client/_replicator
 /client/pouch__all_dbs__
@@ -49,3 +50,4 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
+client/local-packages/CURRENT
