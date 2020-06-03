@@ -15,11 +15,13 @@ export class Database {
       db.sync(remoteDB, {
         live: true,
         retry: true
-      }).on('change', function (change) {
-        console.log('remote changes')
-      }).on('error', function (err) {
-        console.error(err)
       })
+        .on('change', function (change) {
+          console.log('remote changes')
+        })
+        .on('error', function (err) {
+          console.error(err)
+        })
     }
 
     db.changes({
@@ -47,6 +49,15 @@ export class Database {
     return docsSubject.asObservable()
   }
 
+  updatePackage (p) {
+    db.get(p.name).then(d => {
+      if (d) {
+        d.downloading = p.downloading
+        db.put(d).then(() => console.log('package updated'))
+      }
+    })
+  }
+
   updatePackages (packages, updateState) {
     packages.forEach(p => {
       db.get(p.name)
@@ -61,15 +72,21 @@ export class Database {
             db.put({
               _id: p.name,
               name: p.name,
+              storage: p.storage,
+              path: p.path,
+              downloading: false,
               download: false
             })
           }
         })
-        .catch((err) => {
+        .catch(err => {
           console.error(err)
           db.put({
             _id: p.name,
             name: p.name,
+            storage: p.storage,
+            path: p.path,
+            downloading: false,
             download: false
           })
         })

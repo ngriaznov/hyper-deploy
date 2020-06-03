@@ -17,6 +17,8 @@
     "axios": "^0.18.1",
     "cors": "^2.8.5",
     "cryptr": "^6.0.2",
+    "dat-node": "^4.0.0",
+    "downloads-folder": "^1.0.4",
     "electron-store": "^5.1.1",
     "express": "^4.17.1",
     "express-pouchdb": "^4.2.0",

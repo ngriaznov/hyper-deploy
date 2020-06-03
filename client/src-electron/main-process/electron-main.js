@@ -4,9 +4,14 @@ var PouchDB = require('pouchdb')
 var express = require('express')
 var cors = require('cors')
 var expressApp = express()
+var Dat = require('dat-node')
 
+const path = require('path')
+const fs = require('fs-extra')
 const encryptorKey = 'Fe3$MFl1nmf7'
 const cryptr = require('aes256')
+const dats = new Map()
+const downloadsFolder = require('downloads-folder')
 
 try {
   if (
@@ -65,6 +70,58 @@ function createWindow () {
 
     const database = new Database(packageDatabase)
 
+    database.getPackages().subscribe(p => {
+      console.log(p)
+      // promises = []
+
+      // // Stop dats
+      // dats.forEach(d => {
+      //   const promise = new Promise((resolve, reject) => {
+      //     d.close(() => {
+      //       resolve()
+      //     })
+      //   })
+      //   promises.push(promise)
+      // })
+
+      // await Promise.all(promises)
+
+      p.forEach(g => {
+        if (g.download && !dats.get(g.path)) {
+          dats.set(g.path, {})
+          const targetDir = path.join(downloadsFolder(), 'Deploy', g.path.replace(/\\/g, '/'))
+          console.log('package download: ' + targetDir)
+          fs.ensureDirSync(targetDir)
+          Dat(targetDir, { key: g.storage }, function (err, dat) {
+            if (err) throw err
+            dats.set(g.path, dat)
+            const stats = dat.trackStats()
+
+            stats.on('update', () => {
+              const st = stats.get()
+              console.log(st)
+              if (st.downloaded !== st.files) {
+                g.downloading = true
+              } else {
+                g.downloading = false
+              }
+
+              database.updatePackage(g)
+            })
+
+            dat.joinNetwork(function (err) {
+              console.error(err)
+              if (err) throw err
+
+              if (!dat.network.connected || !dat.network.connecting) {
+                console.error('No users currently online for that key.')
+              }
+            })
+          })
+        }
+      })
+    })
+
     // Create IPFS instance
     const initIPFSInstance = async () => {
       return await IPFS.create({ repo: './ipfs' })
@@ -82,7 +139,9 @@ function createWindow () {
 
       // Listen for updates from peers
       db.events.on('replicated', address => {
-        const packages = JSON.parse(cryptr.decrypt(encryptorKey, db.get('storage')[0].structure)).children.map(s => ({
+        const packages = JSON.parse(
+          cryptr.decrypt(encryptorKey, db.get('storage')[0].structure)
+        ).children.map(s => ({
           name: s.name,
           storage: s.storage,
           path: s.path

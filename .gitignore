@@ -51,3 +51,4 @@ yarn-error.log*
 *.njsproj
 *.sln
 client/local-packages/CURRENT
+client/log.txt
